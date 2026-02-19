@@ -8,19 +8,20 @@ import java.math.BigDecimal;
 @Entity
 @Data
 @Table(name = "detalle_venta")
-public class DetalleVenta {
+public class DetalleVentaEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne
     @JoinColumn(name = "venta_id")
-    private Venta venta;
+    private VentaEntity ventaEntity;
 
     @ManyToOne
     @JoinColumn(name = "producto_id")
-    private Producto producto;
+    private ProductoEntity productoEntity;
 
+    @Column(name = "cantidad")
     private Integer cantidad;
 
     @Column(precision = 15, scale = 2)

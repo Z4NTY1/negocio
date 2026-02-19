@@ -10,21 +10,25 @@ import java.time.LocalDateTime;
 @Entity
 @Data
 @Table(name = "movimientos_contables")
-public class MovimientoContable {
+public class MovimientoContableEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "fecha")
     private LocalDateTime fecha;
 
+    @Column(name = "tipo_movimiento")
     @Enumerated(EnumType.STRING)
     private TipoMovimientoContable tipo;
 
+    @Column(name = "tipo_pago")
     @Enumerated(EnumType.STRING)
     private TipoPago tipoPago;
 
-    @Column(precision = 15, scale = 2)
+    @Column(name = "monto",precision = 15, scale = 2)
     private BigDecimal monto;
 
+    @Column(name = "descripcion")
     private String descripcion;
 }

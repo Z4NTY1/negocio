@@ -1,8 +1,9 @@
 package com.prog.negocio.service;
 
+import com.prog.negocio.dto.ActualizarProductoDTO;
 import com.prog.negocio.dto.ProductoRequestDTO;
 import com.prog.negocio.dto.ProductoResponseDTO;
-import com.prog.negocio.entity.Producto;
+import com.prog.negocio.entity.ProductoEntity;
 import com.prog.negocio.repository.ProductoRepository;
 import com.prog.negocio.service.iservice.ProductoService;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +18,7 @@ public class ProductoServiceImpl implements ProductoService {
 
     @Override
     public ProductoResponseDTO crear(ProductoRequestDTO dto) {
-        Producto p = new Producto();
+        ProductoEntity p = new ProductoEntity();
         p.setNombre(dto.getNombre());
         p.setPrecioVenta(dto.getPrecioVenta());
         p.setCosto(dto.getCosto());
@@ -36,8 +37,8 @@ public class ProductoServiceImpl implements ProductoService {
     }
 
     @Override
-    public ProductoResponseDTO actualizar(Long id, ProductoRequestDTO dto) {
-        Producto p = repository.findById(id).orElseThrow();
+    public ProductoResponseDTO actualizar(Long id, ActualizarProductoDTO dto) {
+        ProductoEntity p = repository.findById(id).orElseThrow();
 
         p.setNombre(dto.getNombre());
         p.setPrecioVenta(dto.getPrecioVenta());
@@ -50,12 +51,18 @@ public class ProductoServiceImpl implements ProductoService {
 
     @Override
     public void eliminar(Long id) {
-        repository.deleteById(id);
+
+        ProductoEntity productoEntity = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
+
+        productoEntity.setActivo(false);
+
+        repository.save(productoEntity);
     }
 
     @Override
     public List<ProductoResponseDTO> listar() {
-        return repository.findAll()
+        return repository.findByActivoTrue()
                 .stream()
                 .map(p -> new ProductoResponseDTO(
                         p.getId(),
@@ -68,7 +75,7 @@ public class ProductoServiceImpl implements ProductoService {
 
     @Override
     public ProductoResponseDTO obtenerPorId(Long id) {
-        Producto p = repository.findById(id)
+        ProductoEntity p = repository.findById(id)
                 .orElseThrow();
 
         return new ProductoResponseDTO(

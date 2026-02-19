@@ -9,21 +9,23 @@ import java.time.LocalDate;
 @Entity
 @Data
 @Table(name = "cierres_quincenales")
-public class CierreQuincenal {
+public class CierreQuincenalEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "fecha_inicio")
     private LocalDate fechaInicio;
 
+    @Column(name = "fecha_fin")
     private LocalDate fechaFin;
 
-    @Column(precision = 15, scale = 2)
+    @Column(name ="total_ventas", precision = 15, scale = 2)
     private BigDecimal totalVentas;
 
-    @Column(precision = 15, scale = 2)
+    @Column(name = "total_gastos", precision = 15, scale = 2)
     private BigDecimal totalGastos;
 
-    @Column(precision = 15, scale = 2)
+    @Column(name = "utilidad_neta",precision = 15, scale = 2)
     private BigDecimal utilidadNeta;
 }

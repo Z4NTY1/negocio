@@ -7,7 +7,7 @@ import lombok.Data;
 @Entity
 @Data
 @Table(name = "usuarios")
-public class Usuario {
+public class UsuarioEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -21,6 +21,7 @@ public class Usuario {
     @Column(nullable = false)
     private String password;
 
+    @Column(name = "rol")
     @Enumerated(EnumType.STRING)
     private RolUsuario rol;
 }

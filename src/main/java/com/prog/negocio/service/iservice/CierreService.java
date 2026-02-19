@@ -9,4 +9,8 @@ public interface CierreService {
     CierreResponseDTO generarCierre(LocalDate inicio, LocalDate fin);
 
     List<CierreResponseDTO> listarCierres();
+
+    CierreResponseDTO calcularResumen(LocalDate inicio, LocalDate fin);
+
+    byte[] generarReportePorRango(LocalDate inicio, LocalDate fin);
 }

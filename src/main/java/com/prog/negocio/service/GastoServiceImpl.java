@@ -1,15 +1,14 @@
 package com.prog.negocio.service;
 
 import com.prog.negocio.dto.GastoDTO;
-import com.prog.negocio.entity.Gasto;
-import com.prog.negocio.entity.MovimientoContable;
+import com.prog.negocio.entity.GastoEntity;
+import com.prog.negocio.entity.MovimientoContableEntity;
 import com.prog.negocio.enumAtributte.TipoMovimientoContable;
 import com.prog.negocio.repository.GastoRepository;
 import com.prog.negocio.repository.MovimientoContableRepository;
 import com.prog.negocio.service.iservice.GastoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Service
@@ -20,15 +19,15 @@ public class GastoServiceImpl implements GastoService {
     @Override
     public void registrar(GastoDTO dto) {
 
-        Gasto gasto = new Gasto();
-        gasto.setCategoria(dto.getCategoria());
-        gasto.setFecha(LocalDate.now());
-        gasto.setValor(dto.getValor());
-        gasto.setDescripcion(dto.getDescripcion());
+        GastoEntity gastoEntity = new GastoEntity();
+        gastoEntity.setCategoria(dto.getCategoria());
+        gastoEntity.setFecha(LocalDateTime.now());
+        gastoEntity.setValor(dto.getValor());
+        gastoEntity.setDescripcion(dto.getDescripcion());
 
-        gastoRepository.save(gasto);
+        gastoRepository.save(gastoEntity);
 
-        MovimientoContable mov = new MovimientoContable();
+        MovimientoContableEntity mov = new MovimientoContableEntity();
         mov.setFecha(LocalDateTime.now());
         mov.setTipo(TipoMovimientoContable.EGRESO);
         mov.setMonto(dto.getValor());

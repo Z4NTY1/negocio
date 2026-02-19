@@ -1,5 +1,6 @@
 package com.prog.negocio.controller;
 
+import com.prog.negocio.dto.ActualizarProductoDTO;
 import com.prog.negocio.dto.ProductoRequestDTO;
 import com.prog.negocio.dto.ProductoResponseDTO;
 import com.prog.negocio.service.iservice.ProductoService;
@@ -27,7 +28,7 @@ public class ProductoController {
 
     @PutMapping("/actualizar/{id}")
     public ResponseEntity<?> actualizar(@PathVariable Long id,
-                                        @RequestBody ProductoRequestDTO dto) {
+                                        @RequestBody ActualizarProductoDTO dto) {
         return ResponseEntity.ok(service.actualizar(id, dto));
     }
 

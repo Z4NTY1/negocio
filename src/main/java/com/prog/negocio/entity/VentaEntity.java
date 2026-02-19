@@ -10,19 +10,21 @@ import java.util.List;
 @Entity
 @Data
 @Table(name = "ventas")
-public class Venta {
+public class VentaEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "fecha")
     private LocalDateTime fecha;
 
+    @Column(name = "tipo_pago")
     @Enumerated(EnumType.STRING)
     private TipoPago tipoPago;
 
     @Column(precision = 15, scale = 2)
     private BigDecimal total;
 
-    @OneToMany(mappedBy = "venta", cascade = CascadeType.ALL)
-    private List<DetalleVenta> detalles;
+    @OneToMany(mappedBy = "ventaEntity", cascade = CascadeType.ALL)
+    private List<DetalleVentaEntity> detalles;
 }
