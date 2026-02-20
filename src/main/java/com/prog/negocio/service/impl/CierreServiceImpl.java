@@ -1,8 +1,10 @@
 package com.prog.negocio.service.impl;
 
+import com.prog.negocio.business.ErrorCodesNegocio;
 import com.prog.negocio.dto.CierreResponseDTO;
 import com.prog.negocio.dto.ResumenPagoDTO;
 import com.prog.negocio.entity.CierreQuincenalEntity;
+import com.prog.negocio.exceptions.BcExceptionFactory;
 import com.prog.negocio.repository.CierreQuincenalRepository;
 import com.prog.negocio.repository.GastoRepository;
 import com.prog.negocio.repository.VentaRepository;
@@ -43,7 +45,7 @@ public class CierreServiceImpl implements CierreService {
         validarRango(inicio, fin);
 
         if (cierreQuincenalRepository.findByFechaInicioAndFechaFin(inicio, fin).isPresent()) {
-            throw new RuntimeException("Ya existe un cierre para ese rango");
+            throw BcExceptionFactory.create(ErrorCodesNegocio.RANGO_CIERRE_EXISTE);
         }
 
         Totales totales = calcularTotales(inicio, fin);
