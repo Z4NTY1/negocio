@@ -12,7 +12,7 @@
 	<artifactId>negocio</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>negocio</name>
-	<description>Sistema de gestion de ventas y contabilidad bascia</description>
+	<description>Sistema de gestión de ventas y contabilidad básica</description>
 	<url/>
 	<licenses>
 		<license/>

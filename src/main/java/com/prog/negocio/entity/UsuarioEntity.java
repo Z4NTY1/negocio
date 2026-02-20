@@ -1,6 +1,6 @@
 package com.prog.negocio.entity;
 
-import com.prog.negocio.enumAtributte.RolUsuario;
+import com.prog.negocio.enums.RolUsuario;
 import jakarta.persistence.*;
 import lombok.Data;
 

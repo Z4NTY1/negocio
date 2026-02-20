@@ -1,42 +1,40 @@
 package com.prog.negocio.controller;
+
 import com.prog.negocio.dto.ResumenGeneralDTO;
 import com.prog.negocio.dto.VentaRequestDTO;
 import com.prog.negocio.dto.VentaResponseDTO;
-import com.prog.negocio.service.iservice.VentaService;
+import com.prog.negocio.service.VentaService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import java.time.LocalDate;
 import java.util.List;
 
 @RestController
-@RequestMapping("ventas")
+@RequestMapping("/ventas")
 @RequiredArgsConstructor
 public class VentaController {
-    private final VentaService service;
+
     private final VentaService ventaService;
 
     @PostMapping("/registrar")
-    public ResponseEntity<?> registrar(@RequestBody VentaRequestDTO dto) {
-        return ResponseEntity.ok(service.registrarVenta(dto));
+    public ResponseEntity<VentaResponseDTO> registrar(@RequestBody VentaRequestDTO request) {
+        return ResponseEntity.ok(ventaService.registrarVenta(request));
     }
 
     @GetMapping("/dia")
     public List<VentaResponseDTO> ventasDelDia(@RequestParam String fecha) {
-        return service.listarPorFecha(LocalDate.parse(fecha));
+        return ventaService.listarPorFecha(LocalDate.parse(fecha));
     }
 
     @GetMapping("/dia/resumen")
-    public ResumenGeneralDTO resumenDiario(
-            @RequestParam LocalDate fecha) {
-
+    public ResumenGeneralDTO resumenDiario(@RequestParam LocalDate fecha) {
         return ventaService.resumenDiario(fecha);
     }
 
     @GetMapping("/quincena/resumen")
-    public ResumenGeneralDTO resumenQuincenal(
-            @RequestParam LocalDate fecha) {
-
+    public ResumenGeneralDTO resumenQuincenal(@RequestParam LocalDate fecha) {
         return ventaService.resumenQuincenal(fecha);
     }
 }

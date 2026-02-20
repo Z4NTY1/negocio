@@ -1,15 +1,15 @@
-package com.prog.negocio.service;
+package com.prog.negocio.service.impl;
 
 import com.prog.negocio.dto.*;
 import com.prog.negocio.entity.DetalleVentaEntity;
 import com.prog.negocio.entity.MovimientoContableEntity;
 import com.prog.negocio.entity.ProductoEntity;
 import com.prog.negocio.entity.VentaEntity;
-import com.prog.negocio.enumAtributte.TipoMovimientoContable;
+import com.prog.negocio.enums.TipoMovimientoContable;
 import com.prog.negocio.repository.MovimientoContableRepository;
 import com.prog.negocio.repository.ProductoRepository;
 import com.prog.negocio.repository.VentaRepository;
-import com.prog.negocio.service.iservice.VentaService;
+import com.prog.negocio.service.VentaService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -28,61 +28,60 @@ public class VentaServiceImpl implements VentaService {
     private final MovimientoContableRepository movimientoRepository;
 
     @Override
-    public VentaResponseDTO registrarVenta(VentaRequestDTO dto) {
+    public VentaResponseDTO registrarVenta(VentaRequestDTO request) {
 
-        VentaEntity ventaEntity = new VentaEntity();
-        ventaEntity.setFecha(LocalDateTime.now());
-        ventaEntity.setTipoPago(dto.getTipoPago());
+        VentaEntity venta = new VentaEntity();
+        venta.setFecha(LocalDateTime.now());
+        venta.setTipoPago(request.getTipoPago());
 
         BigDecimal total = BigDecimal.ZERO;
         List<DetalleVentaEntity> detalles = new ArrayList<>();
 
-        for (DetalleVentaDTO d : dto.getDetalles()) {
+        for (DetalleVentaDTO detalleDto : request.getDetalles()) {
 
-            ProductoEntity productoEntity = productoRepository.findById(d.getProductoId())
+            ProductoEntity producto = productoRepository.findById(detalleDto.getProductoId())
                     .orElseThrow();
 
-            if (productoEntity.getStockActual() < d.getCantidad()) {
+            if (producto.getStockActual() < detalleDto.getCantidad()) {
                 throw new RuntimeException("Stock insuficiente");
             }
 
-            productoEntity.setStockActual(productoEntity.getStockActual() - d.getCantidad());
+            producto.setStockActual(producto.getStockActual() - detalleDto.getCantidad());
 
-            BigDecimal subtotal = productoEntity.getPrecioVenta()
-                    .multiply(BigDecimal.valueOf(d.getCantidad()));
+            BigDecimal subtotal = producto.getPrecioVenta()
+                    .multiply(BigDecimal.valueOf(detalleDto.getCantidad()));
 
             total = total.add(subtotal);
 
             DetalleVentaEntity detalle = new DetalleVentaEntity();
-            detalle.setVentaEntity(ventaEntity);
-            detalle.setProductoEntity(productoEntity);
-            detalle.setCantidad(d.getCantidad());
-            detalle.setPrecioUnitario(productoEntity.getPrecioVenta());
+            detalle.setVentaEntity(venta);
+            detalle.setProductoEntity(producto);
+            detalle.setCantidad(detalleDto.getCantidad());
+            detalle.setPrecioUnitario(producto.getPrecioVenta());
             detalle.setSubtotal(subtotal);
 
             detalles.add(detalle);
         }
 
-        ventaEntity.setTotal(total);
-        ventaEntity.setDetalles(detalles);
+        venta.setTotal(total);
+        venta.setDetalles(detalles);
 
-        ventaRepository.save(ventaEntity);
+        ventaRepository.save(venta);
 
-        // Registrar movimiento contable
-        MovimientoContableEntity mov = new MovimientoContableEntity();
-        mov.setFecha(LocalDateTime.now());
-        mov.setTipo(TipoMovimientoContable.INGRESO);
-        mov.setTipoPago(dto.getTipoPago());
-        mov.setMonto(total);
-        mov.setDescripcion("Venta ID: " + ventaEntity.getId());
+        MovimientoContableEntity movimiento = new MovimientoContableEntity();
+        movimiento.setFecha(LocalDateTime.now());
+        movimiento.setTipo(TipoMovimientoContable.INGRESO);
+        movimiento.setTipoPago(request.getTipoPago());
+        movimiento.setMonto(total);
+        movimiento.setDescripcion("Venta ID: " + venta.getId());
 
-        movimientoRepository.save(mov);
+        movimientoRepository.save(movimiento);
 
         return new VentaResponseDTO(
-                ventaEntity.getId(),
+                venta.getId(),
                 total,
-                dto.getTipoPago(),
-                ventaEntity.getFecha()
+                request.getTipoPago(),
+                venta.getFecha()
         );
     }
 
@@ -91,13 +90,13 @@ public class VentaServiceImpl implements VentaService {
 
         return ventaRepository.findByFechaBetween(
                         fecha.atStartOfDay(),
-                        fecha.atTime(23,59,59))
+                        fecha.atTime(23, 59, 59))
                 .stream()
-                .map(v -> new VentaResponseDTO(
-                        v.getId(),
-                        v.getTotal(),
-                        v.getTipoPago(),
-                        v.getFecha()))
+                .map(venta -> new VentaResponseDTO(
+                        venta.getId(),
+                        venta.getTotal(),
+                        venta.getTipoPago(),
+                        venta.getFecha()))
                 .toList();
     }
 
@@ -129,8 +128,8 @@ public class VentaServiceImpl implements VentaService {
                 fin.atTime(23, 59, 59)
         );
     }
-    private ResumenGeneralDTO construirResumen(LocalDateTime inicio,
-                                               LocalDateTime fin) {
+
+    private ResumenGeneralDTO construirResumen(LocalDateTime inicio, LocalDateTime fin) {
 
         List<ResumenPagoDTO> detalle =
                 ventaRepository.obtenerResumenPorRango(inicio, fin);

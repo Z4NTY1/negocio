@@ -1,6 +1,6 @@
 package com.prog.negocio.dto;
 
-import com.prog.negocio.enumAtributte.CategoriaGasto;
+import com.prog.negocio.enums.CategoriaGasto;
 import lombok.Data;
 import java.math.BigDecimal;
 

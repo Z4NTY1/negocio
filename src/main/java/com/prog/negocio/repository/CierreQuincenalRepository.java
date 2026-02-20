@@ -8,7 +8,8 @@ import java.time.LocalDate;
 import java.util.Optional;
 
 @Repository
-public interface CierreRepository extends JpaRepository<CierreQuincenalEntity, Long> {
+public interface CierreQuincenalRepository extends JpaRepository<CierreQuincenalEntity, Long> {
+
     Optional<CierreQuincenalEntity> findByFechaInicioAndFechaFin(
             LocalDate fechaInicio,
             LocalDate fechaFin

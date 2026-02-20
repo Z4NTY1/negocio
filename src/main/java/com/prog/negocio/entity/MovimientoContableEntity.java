@@ -1,7 +1,7 @@
 package com.prog.negocio.entity;
 
-import com.prog.negocio.enumAtributte.TipoMovimientoContable;
-import com.prog.negocio.enumAtributte.TipoPago;
+import com.prog.negocio.enums.TipoMovimientoContable;
+import com.prog.negocio.enums.TipoPago;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.math.BigDecimal;

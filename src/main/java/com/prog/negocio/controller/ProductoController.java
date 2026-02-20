@@ -3,7 +3,7 @@ package com.prog.negocio.controller;
 import com.prog.negocio.dto.ActualizarProductoDTO;
 import com.prog.negocio.dto.ProductoRequestDTO;
 import com.prog.negocio.dto.ProductoResponseDTO;
-import com.prog.negocio.service.iservice.ProductoService;
+import com.prog.negocio.service.ProductoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,26 +14,28 @@ import java.util.List;
 @RequestMapping("/productos")
 @RequiredArgsConstructor
 public class ProductoController {
-    private final ProductoService service;
+
+    private final ProductoService productoService;
 
     @PostMapping("/crear")
-    public ResponseEntity<?> crear(@RequestBody ProductoRequestDTO dto) {
-        return ResponseEntity.ok(service.crear(dto));
+    public ResponseEntity<ProductoResponseDTO> crear(@RequestBody ProductoRequestDTO request) {
+        return ResponseEntity.ok(productoService.crear(request));
     }
 
     @GetMapping
     public List<ProductoResponseDTO> listar() {
-        return service.listar();
+        return productoService.listar();
     }
 
     @PutMapping("/actualizar/{id}")
-    public ResponseEntity<?> actualizar(@PathVariable Long id,
-                                        @RequestBody ActualizarProductoDTO dto) {
-        return ResponseEntity.ok(service.actualizar(id, dto));
+    public ResponseEntity<ProductoResponseDTO> actualizar(
+            @PathVariable Long id,
+            @RequestBody ActualizarProductoDTO request) {
+        return ResponseEntity.ok(productoService.actualizar(id, request));
     }
 
     @DeleteMapping("/eliminar/{id}")
     public void eliminar(@PathVariable Long id) {
-        service.eliminar(id);
+        productoService.eliminar(id);
     }
 }

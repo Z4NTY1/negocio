@@ -1,4 +1,4 @@
-package com.prog.negocio.enumAtributte;
+package com.prog.negocio.enums;
 
 public enum RolUsuario {
     ADMIN,

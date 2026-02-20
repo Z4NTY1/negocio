@@ -1,7 +1,7 @@
 package com.prog.negocio.controller;
 
 import com.prog.negocio.dto.CierreResponseDTO;
-import com.prog.negocio.service.iservice.CierreService;
+import com.prog.negocio.service.CierreService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
@@ -18,7 +18,7 @@ import java.util.List;
 
 public class CierreController {
 
-    private final CierreService service;
+    private final CierreService cierreService;
 
     @PostMapping("/generar")
     public ResponseEntity<CierreResponseDTO> generarCierre(
@@ -30,12 +30,12 @@ public class CierreController {
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate fin) {
 
-        return ResponseEntity.ok(service.generarCierre(inicio, fin));
+        return ResponseEntity.ok(cierreService.generarCierre(inicio, fin));
     }
 
     @GetMapping("/listar")
     public List<CierreResponseDTO> listar() {
-        return service.listarCierres();
+        return cierreService.listarCierres();
     }
 
     @GetMapping("/reporte")
@@ -48,8 +48,7 @@ public class CierreController {
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate rangoFin) {
 
-        byte[] excel =
-                service.generarReportePorRango(rangoInicio, rangoFin);
+        byte[] excel = cierreService.generarReportePorRango(rangoInicio, rangoFin);
 
         String nombreArchivo = String.format(
                 "cierre_%s_a_%s.xlsx",

@@ -1,20 +1,20 @@
-package com.prog.negocio.service;
+package com.prog.negocio.service.impl;
 
 import com.prog.negocio.dto.CierreResponseDTO;
 import com.prog.negocio.dto.ResumenPagoDTO;
 import com.prog.negocio.entity.CierreQuincenalEntity;
-import com.prog.negocio.repository.CierreRepository;
+import com.prog.negocio.repository.CierreQuincenalRepository;
 import com.prog.negocio.repository.GastoRepository;
 import com.prog.negocio.repository.VentaRepository;
-import com.prog.negocio.service.iservice.CierreService;
+import com.prog.negocio.service.CierreService;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.io.ByteArrayOutputStream;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -27,21 +27,22 @@ public class CierreServiceImpl implements CierreService {
 
     private final VentaRepository ventaRepository;
     private final GastoRepository gastoRepository;
-    private final CierreRepository cierreRepository;
+    private final CierreQuincenalRepository cierreQuincenalRepository;
 
-    // =========================================================
-    // GENERAR CIERRE
-    // =========================================================
+    /**
+     * Genera y persiste un cierre para el rango de fechas: totales de ventas, gastos y utilidad.
+     *
+     * @param inicio fecha inicial del rango (inclusive)
+     * @param fin    fecha final del rango (inclusive)
+     * @return DTO del cierre guardado
+     */
     @Override
     @Transactional
     public CierreResponseDTO generarCierre(LocalDate inicio, LocalDate fin) {
 
         validarRango(inicio, fin);
 
-        // Verificar si ya existe cierre
-        if (cierreRepository
-                .findByFechaInicioAndFechaFin(inicio, fin)
-                .isPresent()) {
+        if (cierreQuincenalRepository.findByFechaInicioAndFechaFin(inicio, fin).isPresent()) {
             throw new RuntimeException("Ya existe un cierre para ese rango");
         }
 
@@ -54,24 +55,33 @@ public class CierreServiceImpl implements CierreService {
         cierre.setTotalGastos(totales.totalGastos());
         cierre.setUtilidadNeta(totales.utilidad());
 
-        CierreQuincenalEntity guardado = cierreRepository.save(cierre);
+        CierreQuincenalEntity guardado = cierreQuincenalRepository.save(cierre);
 
         return mapToDTO(guardado);
     }
 
-    // =========================================================
-    // LISTAR CIERRES
-    // =========================================================
+    /**
+     * Lista todos los cierres almacenados.
+     *
+     * @return lista de cierres con totales
+     */
     @Override
     @Transactional(readOnly = true)
     public List<CierreResponseDTO> listarCierres() {
 
-        return cierreRepository.findAll()
+        return cierreQuincenalRepository.findAll()
                 .stream()
                 .map(this::mapToDTO)
                 .toList();
     }
 
+    /**
+     * Genera un Excel con detalle de ventas por tipo de pago y resumen (ventas, gastos, utilidad).
+     *
+     * @param inicio fecha inicial del rango
+     * @param fin    fecha final del rango
+     * @return bytes del archivo .xlsx
+     */
     @Override
     @Transactional(readOnly = true)
     public byte[] generarReportePorRango(LocalDate inicio, LocalDate fin) {
@@ -91,9 +101,6 @@ public class CierreServiceImpl implements CierreService {
 
             XSSFSheet sheet = workbook.createSheet("Cierre");
 
-            // =========================
-            // ESTILOS
-            // =========================
             CellStyle tituloStyle = workbook.createCellStyle();
             Font tituloFont = workbook.createFont();
             tituloFont.setBold(true);
@@ -109,21 +116,14 @@ public class CierreServiceImpl implements CierreService {
             DataFormat format = workbook.createDataFormat();
             monedaStyle.setDataFormat(format.getFormat("$ #,##0.00"));
 
-            // =========================
-            // TÍTULO
-            // =========================
             Row tituloRow = sheet.createRow(0);
             Cell tituloCell = tituloRow.createCell(0);
             tituloCell.setCellValue("REPORTE DE CIERRE");
             tituloCell.setCellStyle(tituloStyle);
 
             Row rangoRow = sheet.createRow(1);
-            rangoRow.createCell(0)
-                    .setCellValue("Desde " + inicio + " hasta " + fin);
+            rangoRow.createCell(0).setCellValue("Desde " + inicio + " hasta " + fin);
 
-            // =========================
-            // ENCABEZADOS
-            // =========================
             int startRow = 3;
 
             Row headerRow = sheet.createRow(startRow);
@@ -135,27 +135,20 @@ public class CierreServiceImpl implements CierreService {
                 cell.setCellStyle(headerStyle);
             }
 
-            // =========================
-            // DATOS
-            // =========================
             int rowIdx = startRow + 1;
 
-            for (ResumenPagoDTO r : detalle) {
+            for (ResumenPagoDTO resumen : detalle) {
                 Row row = sheet.createRow(rowIdx++);
 
-                row.createCell(0).setCellValue(r.getTipoPago().name());
-                row.createCell(1).setCellValue(r.getCantidadVentas());
+                row.createCell(0).setCellValue(resumen.getTipoPago().name());
+                row.createCell(1).setCellValue(resumen.getCantidadVentas());
 
                 Cell moneyCell = row.createCell(2);
-                moneyCell.setCellValue(r.getTotalDinero().doubleValue());
+                moneyCell.setCellValue(resumen.getTotalDinero().doubleValue());
                 moneyCell.setCellStyle(monedaStyle);
             }
 
             int endRow = rowIdx - 1;
-
-            // =========================
-            // RESUMEN FINANCIERO
-            // =========================
             int resumenRowIndex = endRow + 3;
 
             Row ventasRow = sheet.createRow(resumenRowIndex);
@@ -176,9 +169,6 @@ public class CierreServiceImpl implements CierreService {
             utilidadCell.setCellValue(totales.utilidad().doubleValue());
             utilidadCell.setCellStyle(monedaStyle);
 
-            // =========================
-            // AJUSTE COLUMNAS
-            // =========================
             for (int i = 0; i < 3; i++) {
                 sheet.autoSizeColumn(i);
             }
@@ -191,9 +181,13 @@ public class CierreServiceImpl implements CierreService {
         }
     }
 
-    // =========================================================
-    // OBTENER RESUMEN SIN GUARDAR (SOLO CÁLCULO)
-    // =========================================================
+    /**
+     * Calcula ventas, gastos y utilidad para el rango sin persistir cierre.
+     *
+     * @param inicio fecha inicial
+     * @param fin    fecha final
+     * @return DTO con totales (id null)
+     */
     @Override
     @Transactional(readOnly = true)
     public CierreResponseDTO calcularResumen(LocalDate inicio, LocalDate fin) {
@@ -212,29 +206,18 @@ public class CierreServiceImpl implements CierreService {
         );
     }
 
-    // =========================================================
-    // MÉTODO CENTRAL DE CÁLCULO (REUTILIZABLE)
-    // =========================================================
     private Totales calcularTotales(LocalDate inicio, LocalDate fin) {
 
         LocalDateTime inicioDateTime = inicio.atStartOfDay();
         LocalDateTime finDateTime = fin.atTime(23, 59, 59);
 
-        BigDecimal totalVentas = ventaRepository
-                .sumTotalBetween(inicioDateTime, finDateTime);
-
-        // Si tu GastoRepository usa LocalDate:
-        BigDecimal totalGastos = gastoRepository
-                .sumBetween(inicioDateTime, finDateTime);
-
+        BigDecimal totalVentas = ventaRepository.sumTotalBetween(inicioDateTime, finDateTime);
+        BigDecimal totalGastos = gastoRepository.sumBetween(inicioDateTime, finDateTime);
         BigDecimal utilidad = totalVentas.subtract(totalGastos);
 
         return new Totales(totalVentas, totalGastos, utilidad);
     }
 
-    // =========================================================
-    // VALIDACIÓN DE RANGO
-    // =========================================================
     private void validarRango(LocalDate inicio, LocalDate fin) {
 
         if (inicio == null || fin == null) {
@@ -246,9 +229,6 @@ public class CierreServiceImpl implements CierreService {
         }
     }
 
-    // =========================================================
-    // MAPEO A DTO
-    // =========================================================
     private CierreResponseDTO mapToDTO(CierreQuincenalEntity cierre) {
 
         return new CierreResponseDTO(
@@ -261,9 +241,6 @@ public class CierreServiceImpl implements CierreService {
         );
     }
 
-    // =========================================================
-    // RECORD INTERNO PARA AGRUPAR TOTALES
-    // =========================================================
     private record Totales(
             BigDecimal totalVentas,
             BigDecimal totalGastos,
