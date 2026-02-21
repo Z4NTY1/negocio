@@ -5,19 +5,19 @@ import com.prog.negocio.dto.CierreResponseDTO;
 import com.prog.negocio.dto.ResumenPagoDTO;
 import com.prog.negocio.entity.CierreQuincenalEntity;
 import com.prog.negocio.exceptions.BcExceptionFactory;
+import com.prog.negocio.mapper.CierreMapper;
 import com.prog.negocio.repository.CierreQuincenalRepository;
 import com.prog.negocio.repository.GastoRepository;
 import com.prog.negocio.repository.VentaRepository;
+import com.prog.negocio.service.CierreReporteExcelService;
 import com.prog.negocio.service.CierreService;
+import com.prog.negocio.util.FechaUtil;
 import lombok.RequiredArgsConstructor;
-import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.usermodel.XSSFSheet;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -27,9 +27,12 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CierreServiceImpl implements CierreService {
 
+    private static final Logger log = LoggerFactory.getLogger(CierreServiceImpl.class);
+
     private final VentaRepository ventaRepository;
     private final GastoRepository gastoRepository;
     private final CierreQuincenalRepository cierreQuincenalRepository;
+    private final CierreReporteExcelService reporteExcelService;
 
     /**
      * Genera y persiste un cierre para el rango de fechas: totales de ventas, gastos y utilidad.
@@ -58,8 +61,9 @@ public class CierreServiceImpl implements CierreService {
         cierre.setUtilidadNeta(totales.utilidad());
 
         CierreQuincenalEntity guardado = cierreQuincenalRepository.save(cierre);
+        log.info("Cierre generado: id={}, rango {} a {}", guardado.getId(), inicio, fin);
 
-        return mapToDTO(guardado);
+        return CierreMapper.toDTO(guardado);
     }
 
     /**
@@ -70,10 +74,9 @@ public class CierreServiceImpl implements CierreService {
     @Override
     @Transactional(readOnly = true)
     public List<CierreResponseDTO> listarCierres() {
-
         return cierreQuincenalRepository.findAll()
                 .stream()
-                .map(this::mapToDTO)
+                .map(CierreMapper::toDTO)
                 .toList();
     }
 
@@ -92,95 +95,16 @@ public class CierreServiceImpl implements CierreService {
 
         Totales totales = calcularTotales(inicio, fin);
 
-        LocalDateTime inicioDateTime = inicio.atStartOfDay();
-        LocalDateTime finDateTime = fin.atTime(23, 59, 59);
+        LocalDateTime inicioDateTime = FechaUtil.inicioDelDia(inicio);
+        LocalDateTime finDateTime = FechaUtil.finDelDia(fin);
 
         List<ResumenPagoDTO> detalle =
                 ventaRepository.obtenerResumenPorRango(inicioDateTime, finDateTime);
 
-        try (XSSFWorkbook workbook = new XSSFWorkbook();
-             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-
-            XSSFSheet sheet = workbook.createSheet("Cierre");
-
-            CellStyle tituloStyle = workbook.createCellStyle();
-            Font tituloFont = workbook.createFont();
-            tituloFont.setBold(true);
-            tituloFont.setFontHeightInPoints((short) 16);
-            tituloStyle.setFont(tituloFont);
-
-            CellStyle headerStyle = workbook.createCellStyle();
-            Font headerFont = workbook.createFont();
-            headerFont.setBold(true);
-            headerStyle.setFont(headerFont);
-
-            CellStyle monedaStyle = workbook.createCellStyle();
-            DataFormat format = workbook.createDataFormat();
-            monedaStyle.setDataFormat(format.getFormat("$ #,##0.00"));
-
-            Row tituloRow = sheet.createRow(0);
-            Cell tituloCell = tituloRow.createCell(0);
-            tituloCell.setCellValue("REPORTE DE CIERRE");
-            tituloCell.setCellStyle(tituloStyle);
-
-            Row rangoRow = sheet.createRow(1);
-            rangoRow.createCell(0).setCellValue("Desde " + inicio + " hasta " + fin);
-
-            int startRow = 3;
-
-            Row headerRow = sheet.createRow(startRow);
-            String[] columnas = {"Tipo de Pago", "Cantidad Ventas", "Total Ventas"};
-
-            for (int i = 0; i < columnas.length; i++) {
-                Cell cell = headerRow.createCell(i);
-                cell.setCellValue(columnas[i]);
-                cell.setCellStyle(headerStyle);
-            }
-
-            int rowIdx = startRow + 1;
-
-            for (ResumenPagoDTO resumen : detalle) {
-                Row row = sheet.createRow(rowIdx++);
-
-                row.createCell(0).setCellValue(resumen.getTipoPago().name());
-                row.createCell(1).setCellValue(resumen.getCantidadVentas());
-
-                Cell moneyCell = row.createCell(2);
-                moneyCell.setCellValue(resumen.getTotalDinero().doubleValue());
-                moneyCell.setCellStyle(monedaStyle);
-            }
-
-            int endRow = rowIdx - 1;
-            int resumenRowIndex = endRow + 3;
-
-            Row ventasRow = sheet.createRow(resumenRowIndex);
-            ventasRow.createCell(0).setCellValue("TOTAL VENTAS:");
-            Cell totalVentasCell = ventasRow.createCell(1);
-            totalVentasCell.setCellValue(totales.totalVentas().doubleValue());
-            totalVentasCell.setCellStyle(monedaStyle);
-
-            Row gastosRow = sheet.createRow(resumenRowIndex + 1);
-            gastosRow.createCell(0).setCellValue("TOTAL GASTOS:");
-            Cell totalGastosCell = gastosRow.createCell(1);
-            totalGastosCell.setCellValue(totales.totalGastos().doubleValue());
-            totalGastosCell.setCellStyle(monedaStyle);
-
-            Row utilidadRow = sheet.createRow(resumenRowIndex + 2);
-            utilidadRow.createCell(0).setCellValue("UTILIDAD NETA:");
-            Cell utilidadCell = utilidadRow.createCell(1);
-            utilidadCell.setCellValue(totales.utilidad().doubleValue());
-            utilidadCell.setCellStyle(monedaStyle);
-
-            for (int i = 0; i < 3; i++) {
-                sheet.autoSizeColumn(i);
-            }
-
-            workbook.write(out);
-            return out.toByteArray();
-
-        } catch (IOException e) {
-            throw new RuntimeException("Error generando reporte Excel", e);
-        }
+        return reporteExcelService.generarExcel(
+                inicio, fin, detalle,
+                totales.totalVentas(), totales.totalGastos(), totales.utilidad()
+        );
     }
 
     /**
@@ -209,9 +133,8 @@ public class CierreServiceImpl implements CierreService {
     }
 
     private Totales calcularTotales(LocalDate inicio, LocalDate fin) {
-
-        LocalDateTime inicioDateTime = inicio.atStartOfDay();
-        LocalDateTime finDateTime = fin.atTime(23, 59, 59);
+        LocalDateTime inicioDateTime = FechaUtil.inicioDelDia(inicio);
+        LocalDateTime finDateTime = FechaUtil.finDelDia(fin);
 
         BigDecimal totalVentas = ventaRepository.sumTotalBetween(inicioDateTime, finDateTime);
         BigDecimal totalGastos = gastoRepository.sumBetween(inicioDateTime, finDateTime);
@@ -221,26 +144,12 @@ public class CierreServiceImpl implements CierreService {
     }
 
     private void validarRango(LocalDate inicio, LocalDate fin) {
-
         if (inicio == null || fin == null) {
-            throw new IllegalArgumentException("Las fechas no pueden ser nulas");
+            throw BcExceptionFactory.create(ErrorCodesNegocio.FECHAS_NULAS);
         }
-
         if (inicio.isAfter(fin)) {
-            throw new IllegalArgumentException("La fecha inicio no puede ser mayor que la fecha fin");
+            throw BcExceptionFactory.create(ErrorCodesNegocio.FECHA_INICIO_MAYOR);
         }
-    }
-
-    private CierreResponseDTO mapToDTO(CierreQuincenalEntity cierre) {
-
-        return new CierreResponseDTO(
-                cierre.getId(),
-                cierre.getFechaInicio(),
-                cierre.getFechaFin(),
-                cierre.getTotalVentas(),
-                cierre.getTotalGastos(),
-                cierre.getUtilidadNeta()
-        );
     }
 
     private record Totales(

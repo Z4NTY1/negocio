@@ -1,0 +1,22 @@
+spring:
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    # Usar variables de entorno en producción:
+    # export DB_URL=jdbc:postgresql://host:5432/negocio
+    # export DB_USERNAME=usuario
+    # export DB_PASSWORD=contraseña_segura
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+logging:
+  level:
+    root: WARN
+    com.prog.negocio: INFO

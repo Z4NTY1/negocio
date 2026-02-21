@@ -1,19 +1,20 @@
 spring:
   application:
     name: negocio
-  #Esto es para la conexión con base de datos PostgreSQL, solo cambiar el name, username, password y url al final.
-  datasource:
-    driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:5432/negocio
-    username: postgres
-    password: 123
-
-  jpa:
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-    hibernate:
-      ddl-auto: update # Cambia a 'validate', 'create' o 'create-drop' según tu entorno.
+  jackson:
+    time-zone: America/Bogota
+  profiles:
+    active: dev   # Cambiar a 'prod' en producción
 
 server:
   port: 8080
+
+cors:
+  allowed-origins: http://localhost:3000,http://localhost:4200,http://localhost:5173
+
+# Logs: por defecto se escriben en la carpeta 'logs' (negocio.log y negocio-error.log).
+# Para cambiar la ruta: java -DLOG_PATH=C:/ruta/mis-logs -jar negocio.jar
+logging:
+  level:
+    root: INFO
+    com.prog.negocio: INFO
